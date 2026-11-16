@@ -5,6 +5,7 @@
 #
 #   1) Gere o pendrive numa pasta:   powershell -File gerar-pendrive.ps1 -Destino saida\pendrive
 #   2) wsl -d archlinux -u root -- bash /mnt/c/PROJETOS/m3-windows/ferramentas/testar-vm.sh "/mnt/d/.../Win11_25H2_BrazilianPortuguese_x64.iso"
+#      ... testar-vm.sh "<ISO do Windows>" /mnt/c/PROJETOS/m3-windows/saida/m3-windows-vm.iso    # como no Proxmox (2º CD)
 #      wsl -d archlinux -u root -- bash /mnt/c/PROJETOS/m3-windows/ferramentas/testar-vm.sh disco   # já instalado
 #      wsl -d archlinux -u root -- bash /mnt/c/PROJETOS/m3-windows/ferramentas/testar-vm.sh zerar   # apaga a VM
 #
@@ -37,16 +38,20 @@ MIDIA=()
 if [[ ${1:-} != disco ]]; then
     ISO=${1:?Informe o caminho da ISO do Windows 11}
     [[ -f $ISO ]] || { echo "ISO não encontrada: $ISO"; exit 1; }
-    [[ -f $PENDRIVE_DIR/autounattend.xml ]] || { echo "Gere o pendrive antes em $PENDRIVE_DIR (gerar-pendrive.ps1)."; exit 1; }
-    # Pendrive virtual FAT32 com o conteúdo gerado
-    rm -f "$VM/pendrive.img"
-    truncate -s 64M "$VM/pendrive.img"
-    mkfs.fat -F 32 -n M3WIN "$VM/pendrive.img" >/dev/null
-    mcopy -s -i "$VM/pendrive.img" "$PENDRIVE_DIR"/* ::/
-    MIDIA=(
-        -drive "file=$ISO,media=cdrom,readonly=on,if=none,id=cd" -device ide-cd,drive=cd,bus=ide.1,bootindex=0
-        -drive "file=$VM/pendrive.img,format=raw,if=none,id=pen" -device usb-storage,drive=pen,removable=on
-    )
+    MIDIA=(-drive "file=$ISO,media=cdrom,readonly=on,if=none,id=cd" -device ide-cd,drive=cd,bus=ide.1,bootindex=0)
+    if [[ ${2:-} == *.iso ]]; then
+        # Modo Proxmox: a ISO do M3 (gerar-pendrive.ps1 -Destino x.iso) entra como 2º CD
+        [[ -f $2 ]] || { echo "ISO do M3 não encontrada: $2"; exit 1; }
+        MIDIA+=(-drive "file=$2,media=cdrom,readonly=on,if=none,id=cdm3" -device ide-cd,drive=cdm3,bus=ide.2)
+    else
+        [[ -f $PENDRIVE_DIR/autounattend.xml ]] || { echo "Gere o pendrive antes em $PENDRIVE_DIR (gerar-pendrive.ps1)."; exit 1; }
+        # Pendrive virtual FAT32 com o conteúdo gerado
+        rm -f "$VM/pendrive.img"
+        truncate -s 64M "$VM/pendrive.img"
+        mkfs.fat -F 32 -n M3WIN "$VM/pendrive.img" >/dev/null
+        mcopy -s -i "$VM/pendrive.img" "$PENDRIVE_DIR"/* ::/
+        MIDIA+=(-drive "file=$VM/pendrive.img,format=raw,if=none,id=pen" -device usb-storage,drive=pen,removable=on)
+    fi
 fi
 
 if [[ -n ${DISPLAY:-}${WAYLAND_DISPLAY:-} ]]; then

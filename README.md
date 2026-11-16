@@ -53,6 +53,52 @@ Por isso tudo funciona: anti-cheat (Valorant, CoD, FACEIT), drivers, Game Pass, 
 
 > ⚠️ Escolha o disco com cuidado na instalação. Para dual boot, instale numa partição livre.
 
+## Instalar numa máquina virtual (Proxmox, Hyper-V, VirtualBox)
+
+Na VM não tem pendrive: o M3 vai numa **ISO pequena** (0,5 MB) que entra como **segundo CD**. O instalador do Windows acha o `autounattend.xml` nela sozinho.
+
+```bash
+powershell -ExecutionPolicy Bypass -File .\gerar-pendrive.ps1 -Destino .\saida\m3-windows-vm.iso
+```
+
+No **Proxmox**:
+
+| Aba | Configuração |
+|---|---|
+| OS | ISO do Windows 11 pt-BR, tipo **Microsoft Windows 11/2022/2025** |
+| System | Máquina **q35**, BIOS **OVMF (UEFI)**, EFI Storage com "Pre-Enroll keys", **Add TPM** v2.0 |
+| Disks | **SATA**, 64 GB (VirtIO SCSI exige carregar o driver do virtio-win na instalação) |
+| CPU | Tipo **host**, 4 núcleos |
+| Memory | 8 GB |
+| Network | **Intel E1000E** (funciona sem driver) |
+
+Depois de criar: Hardware → Add → **CD/DVD Drive** → a `m3-windows-vm.iso`. Inicie, aperte uma tecla em "Press any key to boot from CD" e siga como no PC. Envie a ISO ao Proxmox pelo painel: storage → ISO Images → Upload.
+
+## Medir o desempenho (antes × depois)
+
+O `m3\m3-medir.ps1` mede o que o M3 reduz, com o PC parado:
+- RAM em uso e memória comprometida;
+- processos, threads e serviços;
+- CPU parada;
+- tarefas agendadas e programas na inicialização;
+- apps instalados, disco usado e tempo de boot.
+
+1. Faça duas VMs iguais: uma com o Windows puro, outra com o M3 Windows.
+2. Ligue cada uma, espere **5 minutos parada** e rode como administrador:
+
+   ```bash
+   powershell -ExecutionPolicy Bypass -File C:\Windows\Setup\M3\m3-medir.ps1
+   ```
+
+   No M3 Windows o script já está em `C:\Windows\Setup\M3`. No Windows puro, coloque a ISO do M3 no CD da VM e rode de `D:\m3\m3-medir.ps1`.
+3. Cada medição vira um `.json` em `C:\Users\Public\Documents`. Junte os dois arquivos num PC e compare:
+
+   ```bash
+   powershell -ExecutionPolicy Bypass -File .\m3\m3-medir.ps1 -Comparar puro.json m3.json
+   ```
+
+Em VM não dá para medir FPS (não há placa de vídeo de verdade); isso fica para o PC.
+
 ## Otimizar um Windows já instalado
 
 Baixe o projeto e rode como administrador:
