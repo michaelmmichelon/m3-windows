@@ -1,0 +1,25 @@
+# M3 Windows - apps pré-instalados removidos (um por linha; # comenta)
+# Mantidos: Loja, Xbox/Game Pass, Fotos, Calculadora, Bloco de Notas, Paint, Terminal,
+# Ferramenta de Captura, Media Player e apps de hardware.
+Clipchamp.Clipchamp
+Microsoft.549981C3F5F10
+Microsoft.BingNews
+Microsoft.BingSearch
+Microsoft.BingWeather
+Microsoft.Copilot
+Microsoft.GetHelp
+Microsoft.Getstarted
+Microsoft.MicrosoftOfficeHub
+Microsoft.MicrosoftSolitaireCollection
+Microsoft.OutlookForWindows
+Microsoft.People
+Microsoft.PowerAutomateDesktop
+Microsoft.Todos
+Microsoft.Windows.DevHome
+Microsoft.WindowsFeedbackHub
+Microsoft.WindowsMaps
+Microsoft.YourPhone
+Microsoft.ZuneVideo
+MicrosoftCorporationII.MicrosoftFamily
+MicrosoftTeams
+MSTeams

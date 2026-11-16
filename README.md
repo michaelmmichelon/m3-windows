@@ -1,6 +1,6 @@
 # M3 Windows
 
-> 🚧 **Versão 0.1, em teste.** Ainda não foi validada numa instalação completa; use primeiro numa máquina virtual.
+> **Versão 0.1.** Validada instalando o Windows 11 25H2 Home (pt-BR) do zero numa VM. Ainda não testada em PC físico.
 
 Windows 11 **oficial** com instalação automática e otimização para **desempenho**: jogos, gravação e dia a dia, sem bloatware, propaganda nem IA empurrada.
 
@@ -27,6 +27,8 @@ Por isso tudo funciona: anti-cheat (Valorant, CoD, FACEIT), drivers, Game Pass, 
 | Windows Update | Continua automático, mas **não reinicia sozinho** com você logado |
 | Visual | Tema escuro, destaque ciano M3 `#12C0EC`, papel de parede e tela de bloqueio M3 |
 | Praticidade | Extensões de arquivo visíveis, Explorador abre em "Este Computador", menu de contexto clássico, "Finalizar tarefa" no clique direito da barra |
+| Iniciar e barra | Sem atalhos patrocinados (WhatsApp, LinkedIn, Adobe Express, Outlook). Fixados do M3: Explorador, Edge, Loja, Configurações, Xbox, Terminal, Fotos, Calculadora, Bloco de Notas, Paint e Ferramenta de Captura; na barra, Explorador, Edge, Loja, Xbox e Terminal (instalação do zero) |
+| Conta | Conta local; o login automático usado na instalação é desligado depois do primeiro reinício |
 
 **Fica ligado:** Windows Defender, Windows Update, firewall e as proteções do kernel.
 
@@ -66,13 +68,35 @@ Depois de grandes atualizações do Windows (as versões anuais), vale rodar de 
 ## Estrutura
 
 ```
-gerar-pendrive.ps1        prepara o pendrive (ou uma pasta) com os arquivos abaixo
-modelo/autounattend.xml   modelo da instalação automática
-modelo/criar-usuario.ps1  cria a conta local na instalação (pelo SID, funciona em qualquer idioma)
-m3/m3-otimizar.ps1        otimização (primeiro login ou manual)
-m3/wallpaper-m3.png       papel de parede e tela de bloqueio
-marca/                    logo M3 TECH
+gerar-pendrive.ps1            prepara o pendrive (ou uma pasta) com os arquivos abaixo
+modelo/autounattend.xml       modelo da instalação automática
+modelo/criar-usuario.ps1      cria a conta local na instalação (pelo SID, funciona em qualquer idioma)
+m3/preparar-instalacao.ps1    antes do primeiro login: tira apps da imagem e define os fixados
+m3/m3-otimizar.ps1            otimização (primeiro login ou manual)
+m3/apps-remover.txt           lista de apps removidos (edite para manter algum)
+m3/LayoutModification.*       fixados do Iniciar (.json) e da barra de tarefas (.xml)
+m3/wallpaper-m3.png           papel de parede e tela de bloqueio
+ferramentas/testar-vm.sh      VM de teste (QEMU no WSL, UEFI + TPM 2.0)
+marca/                        logo M3 TECH
 ```
+
+Para manter um app que o M3 remove (ex.: Vincular ao Celular), apague a linha dele em `m3/apps-remover.txt` antes de gerar o pendrive.
+
+## Testar numa máquina virtual
+
+No WSL (Arch) com KVM, a mesma VM usada no desenvolvimento:
+
+```bash
+powershell -ExecutionPolicy Bypass -File .\gerar-pendrive.ps1 -Destino .\saida\pendrive
+```
+
+```bash
+wsl -d archlinux -u root -- bash /mnt/c/PROJETOS/m3-windows/ferramentas/testar-vm.sh "/mnt/d/caminho/Win11_25H2_BrazilianPortuguese_x64.iso"
+```
+
+Aperte uma tecla quando aparecer "Press any key to boot from CD". A tela fica na janela do WSLg (ou no VNC `localhost:5901`).
+
+> Na VM dentro do WSL (virtualização aninhada) o QEMU às vezes pausa com `KVM: entry failed, hardware error 0x0` num reinício. Isso é limitação do ambiente de teste, não do M3. Para continuar: `echo system_reset | socat - UNIX-CONNECT:/var/tmp/m3win-vm/monitor.sock`.
 
 ## Projeto irmão
 

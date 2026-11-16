@@ -103,8 +103,7 @@ $cu = $cu.Replace('{{USUARIO}}', $Usuario).Replace('{{SENHA_B64}}', (Base64Unico
 Gravar (Join-Path $PastaM3 'criar-usuario.ps1') $cu $true
 $SenhaTexto = $null
 
-Copy-Item (Join-Path $Raiz 'm3\m3-otimizar.ps1') $PastaM3 -Force
-Copy-Item (Join-Path $Raiz 'm3\wallpaper-m3.png') $PastaM3 -Force
+Copy-Item (Join-Path $Raiz 'm3\*') $PastaM3 -Force
 $config = [ordered]@{
     RemoverOneDrive            = [bool]$RemoverOneDrive
     DesligarIntegridadeMemoria = [bool]$DesligarIntegridadeMemoria

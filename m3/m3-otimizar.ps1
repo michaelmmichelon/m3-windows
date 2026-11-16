@@ -92,42 +92,30 @@ if (-not $PrimeiraVez) {
 
 # ------------------------------------------------------------------ apps pré-instalados
 Etapa 'Removendo apps pré-instalados'
-# Mantidos: Loja, Calculadora, Fotos, Bloco de Notas, Paint, Terminal, Ferramenta de Captura,
-# Media Player, apps do Xbox (Game Pass e Game Bar) e drivers/apps de hardware.
-$Apps = @(
-    'Clipchamp.Clipchamp'
-    'Microsoft.549981C3F5F10'                 # Cortana
-    'Microsoft.BingNews'
-    'Microsoft.BingSearch'
-    'Microsoft.BingWeather'
-    'Microsoft.Copilot'
-    'Microsoft.GetHelp'
-    'Microsoft.Getstarted'                    # Dicas
-    'Microsoft.MicrosoftOfficeHub'
-    'Microsoft.MicrosoftSolitaireCollection'
-    'Microsoft.OutlookForWindows'
-    'Microsoft.People'
-    'Microsoft.PowerAutomateDesktop'
-    'Microsoft.Todos'
-    'Microsoft.Windows.DevHome'
-    'Microsoft.WindowsFeedbackHub'
-    'Microsoft.WindowsMaps'
-    'Microsoft.YourPhone'                     # Vincular ao Celular
-    'Microsoft.ZuneVideo'                     # Filmes e TV
-    'MicrosoftCorporationII.MicrosoftFamily'
-    'MicrosoftTeams'
-    'MSTeams'
-)
-$Provisionados = Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+# A lista fica em apps-remover.txt (a mesma usada na instalação, antes do primeiro login)
+$ListaApps = Join-Path $PSScriptRoot 'apps-remover.txt'
+if (-not (Test-Path $ListaApps)) { Aviso 'apps-remover.txt não encontrado ao lado do script; pulando.' }
+$Apps = @(Get-Content $ListaApps -Encoding UTF8 -ErrorAction SilentlyContinue |
+    ForEach-Object { ($_ -split '#')[0].Trim() } | Where-Object { $_ })
+$Instalados = @(Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name) +
+              @(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Select-Object -ExpandProperty DisplayName)
 foreach ($app in $Apps) {
-    $removido = $false
-    Get-AppxPackage -AllUsers -Name $app -ErrorAction SilentlyContinue | ForEach-Object {
-        try { Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction Stop; $removido = $true } catch {}
+    # Primeiro tira da imagem (contas novas não recebem), depois desinstala de quem já tem.
+    # Erros aqui são esperados (pacote já removido) e não interessam ao log.
+    Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object DisplayName -eq $app |
+        ForEach-Object { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null }
+    Get-AppxPackage -AllUsers -Name $app -ErrorAction SilentlyContinue |
+        ForEach-Object { Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue }
+    if (Get-AppxPackage -AllUsers -Name $app -ErrorAction SilentlyContinue) {
+        Aviso "não removido: $app"
+    } elseif ($Instalados -contains $app) {
+        Info "removido: $app"
     }
-    $Provisionados | Where-Object DisplayName -eq $app | ForEach-Object {
-        try { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction Stop | Out-Null; $removido = $true } catch {}
-    }
-    if ($removido) { Info "removido: $app" }
+}
+
+# Impede o Windows de baixar de novo Outlook, Dev Home e Vincular ao Celular
+foreach ($t in 'OutlookUpdate', 'DevHomeUpdate', 'CrossDeviceUpdate') {
+    Remove-Item "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\Orchestrator\UScheduler_Oobe\$t" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 if ($Opcoes.RemoverOneDrive) {
@@ -168,6 +156,7 @@ foreach ($v in 'ContentDeliveryAllowed', 'OemPreInstalledAppsEnabled', 'PreInsta
 Set-Reg 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent' 'DisableWindowsConsumerFeatures' 1
 $Adv = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
 Set-Reg $Adv 'Start_IrisRecommendations' 0          # sugestões no menu Iniciar
+Set-Reg $Adv 'Start_Layout' 1                       # Iniciar com mais fixados e menos recomendações
 Set-Reg $Adv 'Start_AccountNotifications' 0
 Set-Reg $Adv 'ShowSyncProviderNotifications' 0      # propaganda no Explorador
 Set-Reg 'HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement' 'ScoobeSystemSettingEnabled' 0  # "vamos terminar de configurar"
@@ -314,6 +303,17 @@ Set-Reg 'HKLM:\SOFTWARE\M3Windows' 'Aplicado' (Get-Date -Format 's') 'String'
 if ($PrimeiraVez) {
     # A senha usada para criar a conta não precisa mais ficar no disco
     Remove-Item (Join-Path $PSScriptRoot 'criar-usuario.ps1') -Force -ErrorAction SilentlyContinue
+    # O login automático da instalação não continua depois do primeiro reinício
+    $WL = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+    Set-Reg $WL 'AutoAdminLogon' '0' 'String'
+    Remove-ItemProperty -Path $WL -Name 'DefaultPassword', 'AutoLogonCount' -ErrorAction SilentlyContinue
+    # Reconstrói a barra de tarefas só com os fixados do M3 (o Windows acrescenta um atalho
+    # do Outlook depois da instalação, que não sai pelo layout)
+    Remove-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband' -Recurse -Force -ErrorAction SilentlyContinue
+    Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    # Os fixados do Iniciar já foram aplicados à conta; a política sai para você poder mudá-los
+    Remove-Item 'HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start' -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item 'HKLM:\SOFTWARE\Microsoft\PolicyManager\providers\B5292708-1619-419B-9923-E5D9F3925E71\default\Device\Start' -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Etapa 'Pronto!'

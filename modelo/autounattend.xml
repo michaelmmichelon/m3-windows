@@ -39,9 +39,15 @@
           <Path>cmd.exe /c "for %d in (D E F G H I J K L M N O P Q R S T U V W X Y Z C) do @if exist %d:\m3\m3-otimizar.ps1 if not exist %WINDIR%\Setup\M3\m3-otimizar.ps1 xcopy /e /i /y /q %d:\m3 %WINDIR%\Setup\M3"</Path>
           <Description>Copiar arquivos do M3 Windows</Description>
         </RunSynchronousCommand>
-        <!-- Cria a conta local como administradora (pelo SID: funciona em qualquer idioma) -->
+        <!-- Antes do primeiro login: remove apps da imagem e define os fixados do Iniciar/barra -->
         <RunSynchronousCommand wcm:action="add">
           <Order>2</Order>
+          <Path>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%WINDIR%\Setup\M3\preparar-instalacao.ps1"</Path>
+          <Description>Preparar instalacao M3</Description>
+        </RunSynchronousCommand>
+        <!-- Cria a conta local como administradora (pelo SID: funciona em qualquer idioma) -->
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
           <Path>powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%WINDIR%\Setup\M3\criar-usuario.ps1"</Path>
           <Description>Criar conta local</Description>
         </RunSynchronousCommand>
