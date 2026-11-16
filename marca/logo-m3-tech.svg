@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="360 620 1210 760">
+  <!-- Logo M3 TECH vetorizada a partir de marca/referencia-m3-tech.webp -->
+  <!-- Cores: branco #FFFFFF, ciano #12C0EC, fundo #03040C -->
+  <polygon fill="#FFFFFF" points="400,661 585,661 857,912 985,800 1105,800 1105,1060 987,1173 987,945 857,1067 537,773 517,773 517,1173 400,1173"/>
+  <polygon fill="#12C0EC" points="1125,661 1218,661 1110,773 1015,773"/>
+  <polygon fill="#12C0EC" points="1252,661 1531,661 1531,800 1460,870 1531,941 1531,1173 1032,1173 1142,1062 1413,1062 1413,985 1392,967 1227,967 1227,868 1322,868 1411,773 1145,773"/>
+  <g fill="#FFFFFF">
+    <rect x="552" y="1258" width="123" height="20"/><rect x="593" y="1258" width="20" height="87"/>
+    <rect x="768" y="1258" width="20" height="87"/><rect x="768" y="1258" width="102" height="20"/>
+    <rect x="768" y="1293" width="94" height="19"/><rect x="768" y="1325" width="102" height="20"/>
+    <rect x="1231" y="1258" width="20" height="87"/><rect x="1320" y="1258" width="20" height="87"/>
+    <rect x="1231" y="1293" width="109" height="19"/>
+  </g>
+  <path d="M1103 1268H1030Q1005 1268 1005 1293V1310Q1005 1335 1030 1335H1103" fill="none" stroke="#FFFFFF" stroke-width="20"/>
+</svg>
