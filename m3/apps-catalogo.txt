@@ -1,0 +1,11 @@
+# M3 Windows - apps que podem ser instalados no primeiro login (pelo winget)
+# Formato: id do winget | nome | marcado por padrão (s/n)
+# Para adicionar um app, procure o id com:  winget search <nome>
+Valve.Steam                 | Steam                    | s
+Discord.Discord             | Discord                  | s
+OBSProject.OBSStudio        | OBS Studio (gravação)    | s
+7zip.7zip                   | 7-Zip                    | s
+EpicGames.EpicGamesLauncher | Epic Games Launcher      | n
+Google.Chrome               | Google Chrome            | n
+Mozilla.Firefox.pt-BR       | Firefox (português)      | n
+VideoLAN.VLC                | VLC (vídeos)             | n

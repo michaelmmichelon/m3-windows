@@ -1,6 +1,6 @@
 # M3 Windows
 
-> **Versão 0.2.** Validada instalando o Windows 11 25H2 Home (pt-BR) do zero numa VM. Ainda não testada em PC físico.
+> **Versão 0.3.** Validada instalando o Windows 11 25H2 Home (pt-BR) do zero numa VM. Ainda não testada em PC físico.
 
 Windows 11 **oficial** com instalação automática e otimização para **desempenho**: jogos, gravação e dia a dia, sem bloatware, propaganda nem IA empurrada.
 
@@ -109,6 +109,35 @@ powershell -ExecutionPolicy Bypass -File .\m3\m3-otimizar.ps1
 ```
 
 Antes de mudar qualquer coisa, ele cria o ponto de restauração **"Antes do M3 Windows"** (para desfazer: Painel de Controle → Recuperação → Abrir Restauração do Sistema). O registro do que foi feito fica em `C:\ProgramData\M3Windows\otimizar.log`.
+
+## Apps e driver de vídeo
+
+Na preparação do pendrive você escolhe os apps (Enter instala os marcados com `*`):
+
+| # | App | Padrão |
+|---|---|---|
+| 1 | Steam | * |
+| 2 | Discord | * |
+| 3 | OBS Studio | * |
+| 4 | 7-Zip | * |
+| 5 | Epic Games Launcher | |
+| 6 | Google Chrome | |
+| 7 | Firefox (português) | |
+| 8 | VLC | |
+
+Eles são instalados pelo **winget**, sempre a versão oficial e atual, no **login depois do primeiro reinício**. Uma janela mostra o andamento. Se não houver internet, a janela pede para conectar e espera até 10 minutos; se continuar sem, tenta de novo no próximo login.
+
+**Driver de vídeo:**
+
+| Placa | O que o M3 faz |
+|---|---|
+| Intel | Instala o *Intel Driver & Support Assistant*, que mantém o driver atualizado. |
+| NVIDIA | Coloca na área de trabalho o atalho **Driver de vídeo NVIDIA**, para a página oficial do NVIDIA App. O driver da NVIDIA não está no winget. |
+| AMD | Coloca na área de trabalho o atalho **Driver de vídeo AMD**, para a página oficial do Adrenalin. O driver da AMD não está no winget. |
+
+Enquanto o driver oficial não é instalado, o Windows Update instala um driver básico.
+
+Para adicionar apps à lista, edite `m3/apps-catalogo.txt` (o id sai de `winget search <nome>`). Num Windows já instalado: `powershell -ExecutionPolicy Bypass -File .\m3\m3-apps.ps1`.
 
 ## O M3 se mantém sozinho
 

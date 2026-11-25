@@ -30,7 +30,7 @@ param(
     [switch]$Verificar
 )
 
-$Versao = '0.2.0'
+$Versao = '0.3.0'
 $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 $Base = Join-Path $env:ProgramData 'M3Windows'          # onde o M3 fica instalado
@@ -316,12 +316,20 @@ function Aplicar-Computador($Opcoes) {
 function Instalar-Manutencao($Opcoes) {
     Etapa 'Mantendo o M3 em contas novas e depois de atualizações'
     New-Item -ItemType Directory -Force -Path $Base | Out-Null
-    foreach ($f in 'm3-otimizar.ps1', 'apps-remover.txt', 'wallpaper-m3.png', 'm3-medir.ps1') {
+    foreach ($f in 'm3-otimizar.ps1', 'apps-remover.txt', 'wallpaper-m3.png', 'm3-medir.ps1', 'm3-apps.ps1', 'apps-catalogo.txt') {
         $o = Join-Path $PSScriptRoot $f
         $d = Join-Path $Base $f
         if ((Test-Path $o) -and ([IO.Path]::GetFullPath($o) -ne [IO.Path]::GetFullPath($d))) { Copy-Item $o $d -Force }
     }
-    ($Opcoes | ConvertTo-Json) | Set-Content (Join-Path $Base 'config.json') -Encoding UTF8
+    # config.json do M3: as opções + o que veio do pendrive (apps escolhidos etc.)
+    $cfgSaida = [ordered]@{}
+    if (Test-Path $Config) {
+        try { (Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $cfgSaida[$_.Name] = $_.Value } } catch {}
+    }
+    foreach ($k in $Opcoes.Keys) { $cfgSaida[$k] = $Opcoes[$k] }
+    if ([IO.Path]::GetFullPath($Config) -ne [IO.Path]::GetFullPath((Join-Path $Base 'config.json'))) {
+        ($cfgSaida | ConvertTo-Json) | Set-Content (Join-Path $Base 'config.json') -Encoding UTF8
+    }
     # Só administradores e o sistema alteram a pasta (a tarefa roda como SYSTEM); usuários leem
     & icacls.exe $Base /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' | Out-Null
 
@@ -471,6 +479,22 @@ if ($PrimeiraVez) {
     # do Outlook depois da instalação, que não sai pelo layout)
     Remove-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband' -Recurse -Force -ErrorAction SilentlyContinue
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    # Apps escolhidos no pendrive: instalados no login depois deste reinício (com internet e o
+    # winget prontos). A tarefa roda como esta conta, com privilégio de admin, e se apaga no fim.
+    $cfgApps = $null
+    try { $cfgApps = Get-Content (Join-Path $Base 'config.json') -Raw -Encoding UTF8 | ConvertFrom-Json } catch {}
+    if ($cfgApps -and ((@($cfgApps.Apps).Count -gt 0) -or $cfgApps.DriverVideo)) {
+        try {
+            $conta = "$env:USERDOMAIN\$env:USERNAME"
+            $acao = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Base\m3-apps.ps1`" -Tarefa"
+            $gatilho = New-ScheduledTaskTrigger -AtLogOn -User $conta
+            $quem = New-ScheduledTaskPrincipal -UserId $conta -LogonType Interactive -RunLevel Highest
+            $ajustes = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+            Register-ScheduledTask -TaskPath '\M3\' -TaskName 'M3 Windows - instalar apps' -Action $acao -Trigger $gatilho `
+                -Principal $quem -Settings $ajustes -Description 'Instala os apps escolhidos no M3 Windows (uma vez).' -Force | Out-Null
+            Info 'Apps escolhidos: serão instalados no próximo login.'
+        } catch { Aviso "Não deu para agendar a instalação dos apps: $($_.Exception.Message)" }
+    }
     # Os fixados do Iniciar já foram aplicados à conta; a política sai para você poder mudá-los
     Remove-Item 'HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start' -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item 'HKLM:\SOFTWARE\Microsoft\PolicyManager\providers\B5292708-1619-419B-9923-E5D9F3925E71\default\Device\Start' -Recurse -Force -ErrorAction SilentlyContinue

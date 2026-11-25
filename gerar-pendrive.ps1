@@ -23,7 +23,9 @@ param(
     [string]$NomePC,
     [Nullable[bool]]$RemoverOneDrive,
     [Nullable[bool]]$DesligarIntegridadeMemoria,
-    [SecureString]$Senha
+    [SecureString]$Senha,
+    [string]$Apps,                     # números do catálogo (ex.: "1,2,6"), "padrao" ou "nenhum"
+    [Nullable[bool]]$DriverVideo
 )
 $ErrorActionPreference = 'Stop'
 $Raiz = $PSScriptRoot
@@ -141,6 +143,30 @@ if ($null -eq $DesligarIntegridadeMemoria) {
     $DesligarIntegridadeMemoria = Perguntar-SimNao 'Desligar a Integridade de Memória?' $false
 }
 
+# Apps instalados pelo winget no login depois do primeiro reinício
+$Catalogo = @(Get-Content (Join-Path $Raiz 'm3\apps-catalogo.txt') -Encoding UTF8 |
+    Where-Object { $_ -match '\|' -and $_ -notmatch '^\s*#' } |
+    ForEach-Object { $p = $_ -split '\|'; [pscustomobject]@{ Id = $p[0].Trim(); Nome = $p[1].Trim(); Padrao = $p[2].Trim() -eq 's' } })
+if (-not $Apps) {
+    Write-Host "`n    Apps para instalar no primeiro uso (precisa de internet):"
+    for ($i = 0; $i -lt $Catalogo.Count; $i++) {
+        Write-Host ('      {0}) {1}{2}' -f ($i + 1), $Catalogo[$i].Nome, $(if ($Catalogo[$i].Padrao) { '  *' } else { '' }))
+    }
+    $Apps = Read-Host 'Números separados por vírgula (Enter = os marcados com *, 0 = nenhum)'
+}
+$AppsIds = @()
+switch -Regex ($Apps.Trim()) {
+    '^(|padrao)$'  { $AppsIds = @($Catalogo | Where-Object Padrao | ForEach-Object Id) }
+    '^(0|nenhum)$' { $AppsIds = @() }
+    default {
+        $AppsIds = @($Apps -split '[,; ]+' | Where-Object { $_ -match '^\d+$' -and [int]$_ -ge 1 -and [int]$_ -le $Catalogo.Count } |
+            ForEach-Object { $Catalogo[[int]$_ - 1].Id })
+    }
+}
+if ($null -eq $DriverVideo) {
+    $DriverVideo = Perguntar-SimNao 'Cuidar do driver de vídeo (Intel automático; atalho oficial para NVIDIA/AMD)?' $true
+}
+
 # ------------------------------------------------------------------ gravar arquivos
 $PastaM3 = Join-Path $Destino 'm3'
 New-Item -ItemType Directory -Force -Path $PastaM3 | Out-Null
@@ -159,6 +185,8 @@ Copy-Item (Join-Path $Raiz 'm3\*') $PastaM3 -Force
 $config = [ordered]@{
     RemoverOneDrive            = [bool]$RemoverOneDrive
     DesligarIntegridadeMemoria = [bool]$DesligarIntegridadeMemoria
+    Apps                       = @($AppsIds)
+    DriverVideo                = [bool]$DriverVideo
 } | ConvertTo-Json
 Gravar (Join-Path $PastaM3 'config.json') $config $false
 
