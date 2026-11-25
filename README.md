@@ -1,6 +1,6 @@
 # M3 Windows
 
-> **Versão 0.1.** Validada instalando o Windows 11 25H2 Home (pt-BR) do zero numa VM. Ainda não testada em PC físico.
+> **Versão 0.2.** Validada instalando o Windows 11 25H2 Home (pt-BR) do zero numa VM. Ainda não testada em PC físico.
 
 Windows 11 **oficial** com instalação automática e otimização para **desempenho**: jogos, gravação e dia a dia, sem bloatware, propaganda nem IA empurrada.
 
@@ -28,7 +28,8 @@ Por isso tudo funciona: anti-cheat (Valorant, CoD, FACEIT), drivers, Game Pass, 
 | Visual | Tema escuro, destaque ciano M3 `#12C0EC`, papel de parede e tela de bloqueio M3 |
 | Praticidade | Extensões de arquivo visíveis, Explorador abre em "Este Computador", menu de contexto clássico, "Finalizar tarefa" no clique direito da barra |
 | Iniciar e barra | Sem atalhos patrocinados (WhatsApp, LinkedIn, Adobe Express, Outlook). Fixados do M3: Explorador, Edge, Loja, Configurações, Xbox, Terminal, Fotos, Calculadora, Bloco de Notas, Paint e Ferramenta de Captura; na barra, Explorador, Edge, Loja, Xbox e Terminal (instalação do zero) |
-| Conta | Conta local; o login automático usado na instalação é desligado depois do primeiro reinício |
+| Conta | Conta local; o login automático usado na instalação é desligado depois do primeiro reinício. Contas criadas depois também recebem o M3 |
+| Edge | Continua instalado, mas não abre escondido com o Windows nem fica rodando depois de fechado; sem barra lateral, ofertas de compras e assistente de boas-vindas (o Edge passa a mostrar "gerenciado pela organização" por usar políticas) |
 
 **Fica ligado:** Windows Defender, Windows Update, firewall e as proteções do kernel.
 
@@ -87,10 +88,10 @@ O `m3\m3-medir.ps1` mede o que o M3 reduz, com o PC parado:
 2. Ligue cada uma, espere **5 minutos parada** e rode como administrador:
 
    ```bash
-   powershell -ExecutionPolicy Bypass -File C:\Windows\Setup\M3\m3-medir.ps1
+   powershell -ExecutionPolicy Bypass -File C:\ProgramData\M3Windows\m3-medir.ps1
    ```
 
-   No M3 Windows o script já está em `C:\Windows\Setup\M3`. No Windows puro, coloque a ISO do M3 no CD da VM e rode de `D:\m3\m3-medir.ps1`.
+   No M3 Windows o script já está em `C:\ProgramData\M3Windows`. No Windows puro, coloque a ISO do M3 no CD da VM e rode de `D:\m3\m3-medir.ps1`.
 3. Cada medição vira um `.json` em `C:\Users\Public\Documents`. Junte os dois arquivos num PC e compare:
 
    ```bash
@@ -109,7 +110,14 @@ powershell -ExecutionPolicy Bypass -File .\m3\m3-otimizar.ps1
 
 Antes de mudar qualquer coisa, ele cria o ponto de restauração **"Antes do M3 Windows"** (para desfazer: Painel de Controle → Recuperação → Abrir Restauração do Sistema). O registro do que foi feito fica em `C:\ProgramData\M3Windows\otimizar.log`.
 
-Depois de grandes atualizações do Windows (as versões anuais), vale rodar de novo: alguns apps e configurações podem voltar.
+## O M3 se mantém sozinho
+
+Depois de aplicado, os arquivos ficam em `C:\ProgramData\M3Windows` (só administradores alteram) e o M3 cuida de duas situações:
+
+- **Conta nova no PC:** no primeiro login dela, assim que a área de trabalho abre, o M3 aplica as configurações da conta (tema, jogos, mouse, barra, privacidade) e refaz a barra de tarefas. O Iniciar já vem com os mesmos fixados da conta de quem instalou o M3, sem atalhos patrocinados. Roda uma vez por conta e não fica rodando depois.
+- **Atualização grande do Windows** (ex.: 25H2 → 26H2): esse tipo de atualização traz de volta apps e configurações. A tarefa `\M3\M3 Windows - reaplicar` roda 2 min depois do boot, confere a versão do Windows e sai na hora se nada mudou. Se mudou, reaplica o M3 (registro em `reaplicar.log`) e cada conta recebe as configurações de novo no próximo login.
+
+As atualizações mensais não disparam nada.
 
 ## Estrutura
 
@@ -122,7 +130,10 @@ m3/m3-otimizar.ps1            otimização (primeiro login ou manual)
 m3/apps-remover.txt           lista de apps removidos (edite para manter algum)
 m3/LayoutModification.*       fixados do Iniciar (.json) e da barra de tarefas (.xml)
 m3/wallpaper-m3.png           papel de parede e tela de bloqueio
+m3/m3-medir.ps1               medição de desempenho (antes × depois)
+ferramentas/validar.ps1       confere sintaxe/codificação dos scripts antes de gerar
 ferramentas/testar-vm.sh      VM de teste (QEMU no WSL, UEFI + TPM 2.0)
+ferramentas/vm/               digitar, capturar a tela e conduzir a instalação na VM de teste
 marca/                        logo M3 TECH
 ```
 

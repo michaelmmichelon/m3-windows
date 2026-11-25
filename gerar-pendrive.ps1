@@ -163,13 +163,19 @@ $config = [ordered]@{
 Gravar (Join-Path $PastaM3 'config.json') $config $false
 
 if ($ArquivoIso) {
-    Criar-Iso $Destino $ArquivoIso 'M3WIN'
-    # A pasta temporária tem a senha: apaga (com novas tentativas se algo ainda segurar um arquivo)
-    for ($t = 1; $t -le 5 -and (Test-Path $Destino); $t++) {
-        Remove-Item $Destino -Recurse -Force -ErrorAction SilentlyContinue
-        if (Test-Path $Destino) { Start-Sleep -Seconds 1; [GC]::Collect() }
+    try {
+        Criar-Iso $Destino $ArquivoIso 'M3WIN'
+    } catch {
+        throw "Não deu para gravar $ArquivoIso (ele está aberto numa VM ou em outro programa?). $($_.Exception.Message)"
+    } finally {
+        # A pasta temporária tem a senha: apaga sempre, mesmo com erro (com novas tentativas
+        # se algo ainda segurar um arquivo)
+        for ($t = 1; $t -le 5 -and (Test-Path $Destino); $t++) {
+            Remove-Item $Destino -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path $Destino) { Start-Sleep -Seconds 1; [GC]::Collect() }
+        }
+        if (Test-Path $Destino) { Write-Host "    ! Apague à mão a pasta temporária: $Destino" -ForegroundColor Yellow }
     }
-    if (Test-Path $Destino) { Write-Host "    ! Apague à mão a pasta temporária: $Destino" -ForegroundColor Yellow }
     Write-Host "`n==> Pronto!" -ForegroundColor Cyan
     Write-Host "    ISO do M3: $ArquivoIso ($([math]::Round((Get-Item $ArquivoIso).Length / 1MB, 1)) MB)"
     Write-Host '    Na VM: ISO do Windows no 1º CD e esta ISO num 2º CD. Inicie pela ISO do Windows;'

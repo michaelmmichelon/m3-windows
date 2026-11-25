@@ -3,3 +3,4 @@
 *.xml text eol=crlf
 *.png binary
 *.webp binary
+*.sh text eol=lf
